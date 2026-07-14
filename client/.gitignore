@@ -1,0 +1,48 @@
+# ==========================
+# React
+# ==========================
+client/node_modules/
+client/dist/
+
+# ==========================
+# Python
+# ==========================
+server/__pycache__/
+server/*.py[cod]
+*.py[cod]
+
+# Virtual Environment
+server/venv/
+venv/
+
+# Environment Variables
+.env
+.env.*
+server/.env
+client/.env
+
+# Uploads
+server/uploads/
+
+# Generated Reports
+server/*.pdf
+server/reports/
+
+# SQLite Database
+*.db
+*.sqlite3
+
+# Cache
+.pytest_cache/
+.cache/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

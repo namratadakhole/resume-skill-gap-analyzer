@@ -1,0 +1,29 @@
+{
+  "Programming Languages": [
+    "python", "javascript", "typescript", "java", "c++", "c#", "c", "go", "golang", "rust", "ruby", "swift", "kotlin", "scala", "php", "r", "perl", "sql", "html", "css", "bash", "shell", "dart"
+  ],
+  "Frontend Development": [
+    "react", "react.js", "reactjs", "angular", "angularjs", "vue", "vue.js", "vuejs", "svelte", "nextjs", "next.js", "nuxt.js", "gatsby", "bootstrap", "tailwind", "tailwindcss", "redux", "jquery", "sass", "less", "webpack", "vite", "html5", "css3", "typescript"
+  ],
+  "Backend Development": [
+    "node.js", "nodejs", "express", "express.js", "django", "flask", "fastapi", "spring boot", "springboot", "spring mvc", "asp.net", "dotnet", "ruby on rails", "rails", "nestjs", "laravel", "graphql", "rest api", "restful api", "soap", "gRPC", "microservices"
+  ],
+  "Cloud & DevOps": [
+    "aws", "amazon web services", "azure", "gcp", "google cloud platform", "docker", "kubernetes", "k8s", "terraform", "ansible", "jenkins", "github actions", "gitlab ci", "ci/cd", "continuous integration", "continuous deployment", "prometheus", "grafana", "linux", "unix", "nginx", "apache", "serverless", "aws lambda", "cloudformation", "vagrant"
+  ],
+  "Databases & Storage": [
+    "postgresql", "postgres", "mysql", "mongodb", "redis", "sqlite", "oracle", "microsoft sql server", "mssql", "cassandra", "dynamodb", "mariadb", "firebase", "firestore", "elasticsearch", "neo4j", "supabase"
+  ],
+  "Data Science & AI/ML": [
+    "pandas", "numpy", "scikit-learn", "sklearn", "tensorflow", "pytorch", "keras", "nltk", "spacy", "opencv", "matplotlib", "seaborn", "scipy", "spark", "apache spark", "hadoop", "tableau", "power bi", "powerbi", "langchain", "openai", "huggingface", "llm", "large language models", "machine learning", "deep learning", "nlp", "natural language processing", "computer vision", "data analysis", "data visualization"
+  ],
+  "Tools & Frameworks": [
+    "git", "github", "gitlab", "bitbucket", "jira", "confluence", "trello", "postman", "insomnia", "docker compose", "npm", "yarn", "pip", "poetry", "maven", "gradle", "visual studio code", "vscode", "intellij"
+  ],
+  "Methodologies & Architecture": [
+    "agile", "scrum", "kanban", "test driven development", "tdd", "behavior driven development", "bdd", "unit testing", "integration testing", "system design", "design patterns", "oop", "object oriented programming", "functional programming", "mvc", "monolithic architecture", "microservices architecture"
+  ],
+  "Soft Skills": [
+    "communication", "teamwork", "collaboration", "leadership", "problem solving", "critical thinking", "time management", "adaptability", "creativity", "negotiation", "conflict resolution", "mentoring", "active listening", "presentation skills", "work ethic"
+  ]
+}
