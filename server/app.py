@@ -1,10 +1,12 @@
 from fastapi import FastAPI, Request, UploadFile, File, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 from typing import Dict, Optional, Any, List
 import io
 import os
+import time
 from datetime import datetime
 
 # Models & Extractor
@@ -53,11 +55,15 @@ app.add_middleware(
 )
 
 @app.middleware("http")
-async def add_no_cache_headers(request: Request, call_next):
+async def request_timing_and_cache_middleware(request: Request, call_next):
+    start_time = time.time()
     response = await call_next(request)
+    process_time = time.time() - start_time
+    response.headers["X-Process-Time"] = str(process_time)
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
+    print(f"[TIMING] {request.method} {request.url.path} completed in {process_time:.4f}s")
     return response
 
 # Global variables/State
@@ -73,6 +79,18 @@ async def startup_event():
     try:
         await client.admin.command('ping')
         print("Connected to MongoDB Atlas successfully.")
+        
+        # Create database collection indexes
+        print("Ensuring database indexes...")
+        try:
+            await users_collection.create_index("email", unique=True)
+            await resumes_collection.create_index([("user_id", 1), ("is_active", 1)])
+            await analyses_collection.create_index("user_id")
+            await reports_collection.create_index("user_id")
+            await interview_sessions_collection.create_index("user_id")
+            print("Database indexes ensured successfully.")
+        except Exception as idx_err:
+            print(f"Warning: Failed to ensure database indexes: {str(idx_err)}")
     except Exception as e:
         import sys
         import requests
@@ -126,7 +144,7 @@ async def register(payload: UserRegister):
             detail="A user with this email address already exists."
         )
     
-    hashed = hash_password(payload.password)
+    hashed = await run_in_threadpool(hash_password, payload.password)
     try:
         new_user = await crud.create_user(payload.name, payload.email, hashed)
         token = create_access_token(data={"sub": payload.email})
@@ -147,7 +165,11 @@ async def login(payload: UserLogin):
     Authenticates user credentials and returns a JWT access token.
     """
     user = await crud.get_user_by_email(payload.email)
-    if not user or not verify_password(payload.password, user["password_hash"]):
+    is_valid = False
+    if user:
+        is_valid = await run_in_threadpool(verify_password, payload.password, user["password_hash"])
+        
+    if not user or not is_valid:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email address or password."
@@ -202,9 +224,13 @@ async def upload_resume_file(
     Uploads a resume file, saves physical file inside uploads/, extracts text, and registers metadata in MongoDB.
     """
     try:
+        print(f"[UPLOAD] Received file: {file.filename}, content_type: {file.content_type}")
         contents = await file.read()
+        print(f"[UPLOAD] Read {len(contents)} bytes. Initializing text extractor...")
+        
         extracted_text = extract_text(contents, file.filename)
         word_count = len(extracted_text.split())
+        print(f"[UPLOAD] Extraction complete. Total characters: {len(extracted_text)}, word count: {word_count}")
         
         clean_role = target_role or "Not set"
         
@@ -342,8 +368,9 @@ async def analyze(payload: AnalysisCreate, current_user: dict = Depends(get_curr
         raise HTTPException(status_code=400, detail="Job description content cannot be empty.")
         
     try:
-        # Run calculation
-        analysis_result = analyze_resume(
+        # Run calculation in threadpool to prevent blocking the event loop
+        analysis_result = await run_in_threadpool(
+            analyze_resume,
             resume_text, 
             payload.job_desc_text, 
             skills_db, 

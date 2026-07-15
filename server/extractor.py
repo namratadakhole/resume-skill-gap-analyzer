@@ -10,12 +10,37 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
         pdf_file = io.BytesIO(file_bytes)
         reader = pypdf.PdfReader(pdf_file)
         text_content = []
-        for page_num, page in enumerate(reader.pages):
-            page_text = page.extract_text()
-            if page_text:
-                text_content.append(page_text)
-        return "\n".join(text_content)
+        total_pages = len(reader.pages)
+        print(f"[EXTRACT] Initialized PDF parser. Total pages: {total_pages}")
+        
+        for page_num in range(total_pages):
+            try:
+                page = reader.pages[page_num]
+                page_text = page.extract_text()
+                if page_text and page_text.strip():
+                    text_content.append(page_text)
+                    print(f"[EXTRACT] PDF Page {page_num + 1}/{total_pages}: Extracted {len(page_text)} chars")
+                else:
+                    print(f"[EXTRACT] PDF Page {page_num + 1}/{total_pages}: No text found (could be scanned/image)")
+            except Exception as pe:
+                print(f"[EXTRACT WARNING] Failed to parse PDF Page {page_num + 1}: {str(pe)}")
+                continue
+                
+        extracted_text = "\n".join(text_content).strip()
+        print(f"[EXTRACT] PDF parsing finished. Combined length: {len(extracted_text)} characters")
+        if not extracted_text:
+            raise ValueError(
+                "No readable text found in the uploaded PDF document. "
+                "If it is a scanned file or image, please upload the resume in PNG/JPG format or "
+                "ensure it contains machine-readable text layers."
+            )
+        return extracted_text
+    except ValueError as ve:
+        raise ve
     except Exception as e:
+        print(f"[EXTRACT ERROR] Failed to initialize PDF Reader: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise ValueError(f"Failed to extract text from PDF: {str(e)}")
 
 def extract_text_from_docx(file_bytes: bytes) -> str:
@@ -28,19 +53,43 @@ def extract_text_from_docx(file_bytes: bytes) -> str:
         text_content = []
         
         # Extract text from paragraphs
-        for para in doc.paragraphs:
-            if para.text:
-                text_content.append(para.text)
+        paragraphs_count = len(doc.paragraphs)
+        print(f"[EXTRACT] Initialized DOCX parser. Total paragraphs: {paragraphs_count}")
+        for idx, para in enumerate(doc.paragraphs):
+            try:
+                if para.text and para.text.strip():
+                    text_content.append(para.text)
+            except Exception as pe:
+                print(f"[EXTRACT WARNING] Failed to parse DOCX Paragraph {idx + 1}: {str(pe)}")
+                continue
                 
         # Extract text from tables
-        for table in doc.tables:
-            for row in table.rows:
-                for cell in row.cells:
-                    if cell.text:
-                        text_content.append(cell.text)
-                        
-        return "\n".join(text_content)
+        tables_count = len(doc.tables)
+        print(f"[EXTRACT] DOCX Tables found: {tables_count}")
+        for idx, table in enumerate(doc.tables):
+            try:
+                for r_idx, row in enumerate(table.rows):
+                    for c_idx, cell in enumerate(row.cells):
+                        if cell.text and cell.text.strip():
+                            text_content.append(cell.text)
+            except Exception as te:
+                print(f"[EXTRACT WARNING] Failed to parse DOCX Table {idx + 1}: {str(te)}")
+                continue
+                            
+        extracted_text = "\n".join(text_content).strip()
+        print(f"[EXTRACT] DOCX parsing finished. Combined length: {len(extracted_text)} characters")
+        if not extracted_text:
+            raise ValueError(
+                "No readable text found in the uploaded DOCX document. "
+                "Please verify the file contains standard paragraph text."
+            )
+        return extracted_text
+    except ValueError as ve:
+        raise ve
     except Exception as e:
+        print(f"[EXTRACT ERROR] Failed to parse DOCX file: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise ValueError(f"Failed to extract text from DOCX: {str(e)}")
 
 def extract_text_from_txt(file_bytes: bytes) -> str:
@@ -50,7 +99,11 @@ def extract_text_from_txt(file_bytes: bytes) -> str:
     encodings = ['utf-8', 'latin-1', 'cp1252', 'utf-16']
     for encoding in encodings:
         try:
-            return file_bytes.decode(encoding)
+            extracted_text = file_bytes.decode(encoding).strip()
+            print(f"[EXTRACT] TXT decoding success using '{encoding}'. Length: {len(extracted_text)} characters")
+            if not extracted_text:
+                raise ValueError("No readable text found in the uploaded TXT document. The file is empty.")
+            return extracted_text
         except UnicodeDecodeError:
             continue
     raise ValueError("Failed to decode TXT file. Please verify it is a valid text file with standard encoding.")

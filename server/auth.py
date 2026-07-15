@@ -41,6 +41,8 @@ def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
 security_scheme = HTTPBearer()
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security_scheme)) -> dict:
+    import time
+    start_time = time.time()
     token = credentials.credentials
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -55,7 +57,15 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     except jwt.PyJWTError:
         raise credentials_exception
         
+    t_jwt = time.time() - start_time
+    
+    t_db_start = time.time()
     user = await users_collection.find_one({"email": email})
+    t_db = time.time() - t_db_start
+    
     if user is None:
         raise credentials_exception
+        
+    total_time = time.time() - start_time
+    print(f"[TIMING] get_current_user: JWT decode={t_jwt:.4f}s, DB query={t_db:.4f}s, Total={total_time:.4f}s")
     return user
