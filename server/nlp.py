@@ -1,8 +1,4 @@
 import re
-import nltk
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-from nltk.stem import WordNetLemmatizer
 
 # Setup NLTK resources on import
 def download_nltk_resources():
@@ -10,6 +6,7 @@ def download_nltk_resources():
     Downloads required NLTK resources silently, catching any exceptions.
     Uses a socket timeout to prevent long hangs on network blocks.
     """
+    import nltk
     import socket
     old_timeout = socket.getdefaulttimeout()
     try:
@@ -34,8 +31,7 @@ def download_nltk_resources():
     finally:
         socket.setdefaulttimeout(old_timeout)
 
-# Perform downloading
-download_nltk_resources()
+# NLTK downloading is deferred to startup event in background thread
 
 def clean_text(text: str) -> str:
     """
@@ -67,18 +63,21 @@ def preprocess_text(text: str) -> list:
         return []
         
     try:
+        from nltk.tokenize import word_tokenize
         tokens = word_tokenize(cleaned)
     except Exception:
         # Fallback to simple split if nltk tokenization fails
         tokens = cleaned.split()
         
     try:
+        from nltk.corpus import stopwords
         stop_words = set(stopwords.words('english'))
     except Exception:
         # Minimal fallback stopwords if download failed
         stop_words = {'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', "you're", "you've", "you'll", "you'd", 'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', "she's", 'her', 'hers', 'herself', 'it', "it's", 'its', 'itself', 'they', 'them', 'their', 'theirs', 'themselves', 'what', 'which', 'who', 'whom', 'this', 'that', "that'll", 'these', 'those', 'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'a', 'an', 'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of', 'at', 'by', 'for', 'with', 'about', 'against', 'between', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will', 'just', 'don', "don't", 'should', "should've", 'now', 'd', 'll', 'm', 'o', 're', 've', 'y', 'ain', 'aren', "aren't", 'couldn', "couldn't", 'didn', "didn't", 'doesn', "doesn't", 'hadn', "hadn't", 'hasn', "hasn't", 'haven', "haven't", 'isn', "isn't", 'ma', 'mightn', "mightn't", 'mustn', "mustn't", 'needn', "needn't", 'shan', "shan't", 'shouldn', "shouldn't", 'wasn', "wasn't", 'weren', "weren't", 'won', "won't", 'wouldn', "wouldn't"}
         
     try:
+        from nltk.stem import WordNetLemmatizer
         lemmatizer = WordNetLemmatizer()
         processed_tokens = [lemmatizer.lemmatize(token) for token in tokens if token not in stop_words and len(token) > 1]
     except Exception:

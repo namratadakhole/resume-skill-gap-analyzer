@@ -108,13 +108,18 @@ async def startup_event():
         sys.exit(1)
         
     import threading
-    def warmup():
-        from semantic_engine import SemanticEngine
-        print("Warming up Semantic Engine (all-MiniLM-L6-v2) in background...")
-        SemanticEngine.get_model()
-        print("Semantic Engine warmed up and cached successfully.")
+    def background_tasks():
+        # Defer NLTK downloading to background thread to prevent blocking module imports
+        from nlp import download_nltk_resources
+        print("[STARTUP] Starting NLTK resources download in background thread...")
+        download_nltk_resources()
+        print("[STARTUP] NLTK resources background download checks completed.")
+        
+        # NOTE: SentenceTransformer loading is completely deferred to on-demand request usage
+        # to ensure zero GIL blocking or high CPU contention during server startup.
+        print("[STARTUP] SentenceTransformer model pre-warming disabled for instant startup.")
     
-    threading.Thread(target=warmup, daemon=True).start()
+    threading.Thread(target=background_tasks, daemon=True).start()
 
 # Helper to serialize MongoDB documents (converting ObjectIds and datetimes)
 def serialize_doc(doc: dict) -> dict:
