@@ -95,20 +95,20 @@ async def startup_event():
         except Exception as idx_err:
             print(f"Warning: Failed to ensure database indexes: {str(idx_err)}")
     except Exception as e:
-        import sys
         import requests
-        print(f"MongoDB Atlas connection failed: {str(e)}")
+        print(f"[STARTUP WARNING] MongoDB Atlas connection failed: {str(e)}")
+        print("The backend server will remain running, but database dependent requests will fail.")
         try:
             public_ip = requests.get("https://api.ipify.org", timeout=5).text.strip()
             print("\n" + "="*80)
-            print(f" [CRITICAL] Your current public IP address is: {public_ip}")
+            print(f" [CRITICAL] Your Render instance public IP address is: {public_ip}")
             print(" Please add this IP to your MongoDB Atlas Network Access rules:")
             print(" Security -> Network Access -> Add IP Address -> Add Current IP Address")
             print(" (Or add 0.0.0.0/0 to allow connections from anywhere for testing)")
             print("="*80 + "\n")
         except Exception:
             pass
-        sys.exit(1)
+        # Do not call sys.exit(1) to avoid failing the Render container boot.
         
     import threading
     def background_tasks():
