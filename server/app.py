@@ -259,13 +259,15 @@ async def upload_resume_file(
     Uploads a resume file, saves physical file inside uploads/, extracts text, and registers metadata in MongoDB.
     """
     try:
-        print(f"[UPLOAD] Received file: {file.filename}, content_type: {file.content_type}")
         contents = await file.read()
-        print(f"[UPLOAD] Read {len(contents)} bytes. Initializing text extractor...")
+        file_size = len(contents)
+        print(f"[UPLOAD] Received file: {file.filename}, content_type: {file.content_type}, size: {file_size} bytes")
         
         extracted_text = extract_text(contents, file.filename)
+        text_len = len(extracted_text)
         word_count = len(extracted_text.split())
-        print(f"[UPLOAD] Extraction complete. Total characters: {len(extracted_text)}, word count: {word_count}")
+        first_200 = extracted_text[:200]
+        print(f"[UPLOAD] Extracted text from {file.filename}. Size: {file_size} bytes, Text Length: {text_len} chars, Word Count: {word_count}. First 200 chars: {repr(first_200)}")
         
         clean_role = target_role or "Not set"
         
