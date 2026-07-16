@@ -145,8 +145,10 @@ async def register(payload: UserRegister):
     """
     Registers a new user, hashes their password, and saves them to MongoDB.
     """
+    print(f"[AUTH] Registration request received for email: {payload.email}")
     existing_user = await crud.get_user_by_email(payload.email)
     if existing_user:
+        print(f"[AUTH WARNING] Registration rejected: user {payload.email} already exists")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="A user with this email address already exists."
@@ -155,13 +157,18 @@ async def register(payload: UserRegister):
     hashed = await run_in_threadpool(hash_password, payload.password)
     try:
         new_user = await crud.create_user(payload.name, payload.email, hashed)
+        print(f"[AUTH] User {payload.email} created in database. Generating JWT...")
         token = create_access_token(data={"sub": payload.email})
+        print(f"[AUTH] Registration JWT generated successfully for: {payload.email}")
         return {
             "access_token": token,
             "token_type": "bearer",
             "user": serialize_doc(new_user)
         }
     except Exception as e:
+        print(f"[AUTH ERROR] Registration failed for {payload.email}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Registration failed: {str(e)}"
@@ -172,23 +179,43 @@ async def login(payload: UserLogin):
     """
     Authenticates user credentials and returns a JWT access token.
     """
+    print(f"[AUTH] Login request received for email: {payload.email}")
     user = await crud.get_user_by_email(payload.email)
-    is_valid = False
-    if user:
-        is_valid = await run_in_threadpool(verify_password, payload.password, user["password_hash"])
-        
-    if not user or not is_valid:
+    
+    if not user:
+        print(f"[AUTH] Login failed: user with email {payload.email} not found in database")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email address or password."
         )
+        
+    print(f"[AUTH] User {payload.email} found in database. Verifying password...")
+    is_valid = await run_in_threadpool(verify_password, payload.password, user["password_hash"])
     
-    token = create_access_token(data={"sub": user["email"]})
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "user": serialize_doc(user)
-    }
+    if not is_valid:
+        print(f"[AUTH] Login failed: password mismatch for email {payload.email}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email address or password."
+        )
+        
+    print(f"[AUTH] Password verification passed for: {payload.email}. Generating JWT...")
+    try:
+        token = create_access_token(data={"sub": user["email"]})
+        print(f"[AUTH] Login JWT generated successfully for: {payload.email}")
+        return {
+            "access_token": token,
+            "token_type": "bearer",
+            "user": serialize_doc(user)
+        }
+    except Exception as e:
+        print(f"[AUTH ERROR] JWT token generation failed for {payload.email}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate secure session: {str(e)}"
+        )
 
 @app.get("/auth/me", response_model=UserResponse)
 async def get_me(current_user: dict = Depends(get_current_user)):
