@@ -48,7 +48,10 @@ app = FastAPI(
 # Enable CORS for React frontend (Vite default is http://localhost:5173)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://resume-skill-gap-analyzer-eta.vercel.app",
+        "http://localhost:5173"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
