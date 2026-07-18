@@ -144,9 +144,17 @@ export default function Dashboard() {
       setError('Please upload a resume or paste your resume text first.');
       return;
     }
-    if (!jobDescText.trim()) {
-      setError('Please paste a target job description to audit against.');
-      return;
+    
+    let targetJd = jobDescText.trim();
+    if (!targetJd) {
+      targetJd = `Software Engineer / Full Stack Developer
+Position Overview: We are looking for a Software Engineer proficient in React, JavaScript, Python, Node.js, and SQL databases.
+Required Skills & Competencies: React, JavaScript, TypeScript, Python, Node.js, REST APIs, Git, SQL, Docker, HTML, CSS.
+Key Responsibilities:
+- Build responsive user interfaces and web applications.
+- Collaborate with team to design, develop, and deploy features.
+- Write clean, maintainable code following industry standards.`;
+      setJobDescText(targetJd);
     }
 
     setAnalyzing(true);
@@ -162,7 +170,7 @@ export default function Dashboard() {
     };
 
     // Start API request in parallel with loading step animation
-    const apiPromise = analyzeResume(resumeText, jobDescText, apiWeights);
+    const apiPromise = analyzeResume(resumeText, targetJd, apiWeights);
 
     let step = 0;
     const stepInterval = setInterval(() => {
@@ -456,7 +464,7 @@ export default function Dashboard() {
       )}
 
       {/* Input Form Actions when no results are shown */}
-      {!results && !analyzing && !fileName && (
+      {!results && !analyzing && (
         <div className="flex flex-col gap-4">
           {error && (
             <div className="flex items-center gap-3 rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">
