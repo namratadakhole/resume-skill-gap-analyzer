@@ -20,7 +20,7 @@ export default function AIResumeCoach({ results, resumeName }) {
       if (!token) return;
       try {
         const response = await api.get('/api/interview_sessions');
-        if (response.data.length > 0) {
+        if (Array.isArray(response.data) && response.data.length > 0) {
           const loaded = [
             {
               sender: 'coach',

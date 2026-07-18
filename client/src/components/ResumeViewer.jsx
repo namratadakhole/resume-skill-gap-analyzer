@@ -6,10 +6,10 @@ export default function ResumeViewer({ resumeText, fileName, parserResults, matc
   const name = parserResults?.candidate_name || 'Not detected';
   const email = parserResults?.email || 'Not detected';
   const phone = parserResults?.phone || 'Not detected';
-  const education = parserResults?.education || [];
-  const experience = parserResults?.experience || [];
-  const certifications = parserResults?.certifications || [];
-  const projects = parserResults?.projects || [];
+  const education = Array.isArray(parserResults?.education) ? parserResults.education : [];
+  const experience = Array.isArray(parserResults?.experience) ? parserResults.experience : [];
+  const certifications = Array.isArray(parserResults?.certifications) ? parserResults.certifications : [];
+  const projects = Array.isArray(parserResults?.projects) ? parserResults.projects : [];
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

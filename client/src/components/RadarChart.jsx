@@ -9,9 +9,9 @@ export default function RechartsRadarChart({ data }) {
     (settings.general.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   // Format categories name to be shorter for presentation
-  const formattedData = data.map((item) => ({
+  const formattedData = (data || []).map((item) => ({
     ...item,
-    subject: item.subject
+    subject: (item?.subject || '')
       .replace(' Development', '')
       .replace(' & Storage', '')
       .replace(' & AI/ML', '')

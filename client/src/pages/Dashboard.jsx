@@ -177,13 +177,17 @@ export default function Dashboard() {
       clearInterval(stepInterval);
       setLoadingStep(loadingSteps.length - 1);
 
-      setResults(data.results);
+      console.log('[DASHBOARD] Received API analysis data:', data);
+      const analysisObj = data?.results || data;
+      console.log('[DASHBOARD] Extracted analysisObj for state:', analysisObj);
+
+      setResults(analysisObj);
       const firstLine = jobDescText.split('\n')[0] || '';
       const jobTitle = firstLine.replace('Position:', '').replace('Role:', '').replace('Company:', '').trim() || 'Software Developer';
-      saveNewReport(data.results, fileName, jobTitle);
+      saveNewReport(analysisObj, fileName, jobTitle);
     } catch (err) {
       clearInterval(stepInterval);
-      console.error('Analysis error:', err);
+      console.error('[DASHBOARD] Analysis error:', err);
       setError(err.response?.data?.detail || err.message || 'Analysis engine execution failed.');
     } finally {
       clearInterval(stepInterval);
