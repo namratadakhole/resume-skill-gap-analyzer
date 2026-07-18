@@ -386,11 +386,15 @@ async def analyze(payload: AnalysisCreate, current_user: dict = Depends(get_curr
     """
     Performs NLP analysis, supporting either dynamic input text or loading text from db by resume_id.
     """
+    start_time = time.time()
+    print(f"[{datetime.now().isoformat()}] [API /api/analyze] Received analysis request for user: {current_user.get('email')}")
+    
     # 1. Fetch text from selected resume if resume_id is passed
     resume_text = ""
     resume_filename = "Active_Resume.txt"
     
     if payload.resume_id:
+        print(f"[{datetime.now().isoformat()}] [API /api/analyze] Fetching resume text by ID: {payload.resume_id}")
         db_resume = await crud.get_resume_by_id(str(current_user["_id"]), payload.resume_id)
         if not db_resume:
             raise HTTPException(status_code=404, detail="Selected database resume not found.")
@@ -405,6 +409,7 @@ async def analyze(payload: AnalysisCreate, current_user: dict = Depends(get_curr
         raise HTTPException(status_code=400, detail="Job description content cannot be empty.")
         
     try:
+        print(f"[{datetime.now().isoformat()}] [API /api/analyze] Running analyze_resume in threadpool (Resume len: {len(resume_text)}, JobDesc len: {len(payload.job_desc_text)})...")
         # Run calculation in threadpool to prevent blocking the event loop
         analysis_result = await run_in_threadpool(
             analyze_resume,
@@ -413,6 +418,7 @@ async def analyze(payload: AnalysisCreate, current_user: dict = Depends(get_curr
             skills_db, 
             payload.weights
         )
+        print(f"[{datetime.now().isoformat()}] [API /api/analyze] NLP calculation complete. ATS Score: {analysis_result.get('ats_score')}%. Saving analysis record to MongoDB...")
         
         # Extract title
         first_line = payload.job_desc_text.split('\n')[0] or ''
@@ -441,8 +447,11 @@ async def analyze(payload: AnalysisCreate, current_user: dict = Depends(get_curr
                 target_role=job_title
             )
             
+        elapsed = time.time() - start_time
+        print(f"[{datetime.now().isoformat()}] [API /api/analyze SUCCESS] Analysis record saved & returned in {elapsed:.3f}s. Record ID: {db_analysis.get('_id')}")
         return serialize_doc(db_analysis)
     except Exception as e:
+        print(f"[{datetime.now().isoformat()}] [API /api/analyze ERROR] Failed: {str(e)}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Analysis engine failed: {str(e)}")

@@ -138,23 +138,8 @@ export default function Dashboard() {
     }
   };
 
-  // Simulated step loading trigger
-  const runStepLoader = (callback) => {
-    setLoadingStep(0);
-    const interval = setInterval(() => {
-      setLoadingStep((prev) => {
-        if (prev >= loadingSteps.length - 1) {
-          clearInterval(interval);
-          callback();
-          return prev;
-        }
-        return prev + 1;
-      });
-    }, 450);
-  };
-
   // Analysis executor
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
     if (!resumeText.trim()) {
       setError('Please upload a resume or paste your resume text first.');
       return;
@@ -166,34 +151,44 @@ export default function Dashboard() {
 
     setAnalyzing(true);
     setError(null);
+    setLoadingStep(0);
 
-    runStepLoader(async () => {
-      try {
-        // Map frontend context weights to backend weights keys
-        const apiWeights = {
-          semantic: settings.analysis.semanticWeight / 100,
-          keyword: settings.analysis.keywordWeight / 100,
-          skill_coverage: settings.analysis.skillsWeight / 100,
-          formatting: settings.analysis.formattingWeight / 100,
-          experience: settings.analysis.experienceWeight / 100
-        };
+    const apiWeights = {
+      semantic: settings.analysis.semanticWeight / 100,
+      keyword: settings.analysis.keywordWeight / 100,
+      skill_coverage: settings.analysis.skillsWeight / 100,
+      formatting: settings.analysis.formattingWeight / 100,
+      experience: settings.analysis.experienceWeight / 100
+    };
 
-        const data = await analyzeResume(resumeText, jobDescText, apiWeights);
-        setResults(data.results);
-        // Extract job title from first line of jobDescText
-        const firstLine = jobDescText.split('\n')[0] || '';
-        const jobTitle = firstLine.replace('Position:', '').replace('Role:', '').replace('Company:', '').trim() || 'Software Developer';
-        saveNewReport(data.results, fileName, jobTitle);
-      } catch (err) {
-        console.error(err);
-        console.error(err.response);
-        console.error(err.response?.data);
-        console.error(err.message);
-        setError(err.response?.data?.detail || err.message || 'Analysis engine execution failed.');
-      } finally {
-        setAnalyzing(false);
+    // Start API request in parallel with loading step animation
+    const apiPromise = analyzeResume(resumeText, jobDescText, apiWeights);
+
+    let step = 0;
+    const stepInterval = setInterval(() => {
+      step += 1;
+      if (step < loadingSteps.length) {
+        setLoadingStep(step);
       }
-    });
+    }, 400);
+
+    try {
+      const data = await apiPromise;
+      clearInterval(stepInterval);
+      setLoadingStep(loadingSteps.length - 1);
+
+      setResults(data.results);
+      const firstLine = jobDescText.split('\n')[0] || '';
+      const jobTitle = firstLine.replace('Position:', '').replace('Role:', '').replace('Company:', '').trim() || 'Software Developer';
+      saveNewReport(data.results, fileName, jobTitle);
+    } catch (err) {
+      clearInterval(stepInterval);
+      console.error('Analysis error:', err);
+      setError(err.response?.data?.detail || err.message || 'Analysis engine execution failed.');
+    } finally {
+      clearInterval(stepInterval);
+      setAnalyzing(false);
+    }
   };
 
   // Process data for charts

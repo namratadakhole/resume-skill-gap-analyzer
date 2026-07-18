@@ -118,13 +118,20 @@ def analyze_resume(resume_text: str, job_desc_text: str, skills_db: Dict[str, Li
     """
     Performs comprehensive Transformer + TF-IDF semantic and keyword analysis.
     """
+    from datetime import datetime
+    import time
+    start_time = time.time()
+    print(f"[{datetime.now().isoformat()}] [ANALYZER STEP 1/7] Starting Semantic Cosine Similarity calculation...")
+    
     # 1. Semantic Cosine Similarity (Sentence Transformer: all-MiniLM-L6-v2)
     semantic_similarity = SemanticEngine.calculate_similarity(resume_text, job_desc_text)
     semantic_score = round(semantic_similarity * 100, 1)
+    print(f"[{datetime.now().isoformat()}] [ANALYZER STEP 2/7] Semantic score: {semantic_score}%. Starting Keyword TF-IDF Similarity...")
     
     # 2. Keyword Cosine Similarity (Lexical TF-IDF match)
     tfidf_similarity = calculate_cosine_similarity(resume_text, job_desc_text)
     keyword_score = round(tfidf_similarity * 100, 1)
+    print(f"[{datetime.now().isoformat()}] [ANALYZER STEP 3/7] Keyword score: {keyword_score}%. Extracting skills...")
     
     # 3. Skills Coverage Extraction (Synonym mapping enabled)
     resume_skills = extract_skills_with_synonyms(resume_text, skills_db)
@@ -153,6 +160,8 @@ def analyze_resume(resume_text: str, job_desc_text: str, skills_db: Dict[str, Li
         if cat_missing:
             categorized_missing[category] = cat_missing
             
+    print(f"[{datetime.now().isoformat()}] [ANALYZER STEP 4/7] Skill coverage: {skill_coverage_score}% (Matched: {len(matched_skills)}, Missing: {len(missing_skills)}). Evaluating formatting heuristics...")
+    
     # 4. Layout Audits Formatting Score
     formatting_result = evaluate_formatting_heuristics(resume_text)
     formatting_score = formatting_result["score"]
@@ -163,6 +172,7 @@ def analyze_resume(resume_text: str, job_desc_text: str, skills_db: Dict[str, Li
         for check in formatting_result["checks"]
     )
     experience_score = 100.0 if has_exp_section else 50.0
+    print(f"[{datetime.now().isoformat()}] [ANALYZER STEP 5/7] Formatting: {formatting_score}%, Experience: {experience_score}%. Calculating combined ATS score...")
     
     # 6. Combined ATS compatibility calculation
     ats_score = calculate_combined_ats_score(
@@ -173,6 +183,7 @@ def analyze_resume(resume_text: str, job_desc_text: str, skills_db: Dict[str, Li
         experience_score,
         weights
     )
+    print(f"[{datetime.now().isoformat()}] [ANALYZER STEP 6/7] Combined ATS score: {ats_score}%. Extracting candidate profile metadata...")
     
     # 7. Candidate Profile Resume Intelligence Extraction
     parser_results = parse_resume_data(resume_text)
@@ -190,8 +201,12 @@ def analyze_resume(resume_text: str, job_desc_text: str, skills_db: Dict[str, Li
         
     top_keywords = list(matched_skills)[:10]
     
+    print(f"[{datetime.now().isoformat()}] [ANALYZER STEP 7/7] Generating personalized recommendations...")
     # Generate recommendations
     recommendations = generate_personalized_recommendations(missing_skills, categorized_missing, ats_score)
+    
+    elapsed = time.time() - start_time
+    print(f"[{datetime.now().isoformat()}] [ANALYZER COMPLETE] Resume analysis finished in {elapsed:.3f}s. ATS Score: {ats_score}%, Tier: {tier}")
     
     return {
         "ats_score": ats_score,
