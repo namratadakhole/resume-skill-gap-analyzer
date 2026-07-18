@@ -196,7 +196,12 @@ Key Responsibilities:
     } catch (err) {
       clearInterval(stepInterval);
       console.error('[DASHBOARD] Analysis error:', err);
-      setError(err.response?.data?.detail || err.message || 'Analysis engine execution failed.');
+      const rawMsg = err.response?.data?.detail || err.message || '';
+      if (!err.response || rawMsg.toLowerCase().includes('network error')) {
+        setError('Network Connection Error: Backend service may be cold-starting on Render. Please click "Initiate Semantic Match Audit" again in a few seconds.');
+      } else {
+        setError(rawMsg || 'Analysis engine execution failed.');
+      }
     } finally {
       clearInterval(stepInterval);
       setAnalyzing(false);

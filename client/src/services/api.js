@@ -23,6 +23,33 @@ api.interceptors.request.use(
   }
 );
 
+// Axios Response Interceptor for automatic retries on cold starts or network glitches
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const config = error.config;
+    if (!config || config._retryCount >= 3) {
+      return Promise.reject(error);
+    }
+
+    // Initialize retry counter
+    config._retryCount = config._retryCount || 0;
+
+    // Retry on Network Error or 502/503/504 gateway cold start status codes
+    const isNetworkError = !error.response || error.code === 'ERR_NETWORK';
+    const isGatewayError = error.response && [502, 503, 504].includes(error.response.status);
+
+    if (isNetworkError || isGatewayError) {
+      config._retryCount += 1;
+      console.warn(`[API RETRY] Network/Cold Start detected (${error.message}). Retrying request ${config._retryCount}/3 in 2s...`);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      return api(config);
+    }
+
+    return Promise.reject(error);
+  }
+);
+
 // --- Resume Management REST Actions ---
 
 export const uploadResumeFile = async (file, targetRole = 'Not set') => {
