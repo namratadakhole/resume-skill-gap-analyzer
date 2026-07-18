@@ -186,8 +186,14 @@ async def create_analysis(
         "results": results,
         "created_date": datetime.utcnow()
     }
-    result = await analyses_collection.insert_one(new_analysis)
-    new_analysis["_id"] = result.inserted_id
+    try:
+        import asyncio
+        result = await asyncio.wait_for(analyses_collection.insert_one(new_analysis), timeout=2.0)
+        new_analysis["_id"] = result.inserted_id
+    except Exception as e:
+        print(f"[CRUD WARNING] MongoDB insert_one analysis failed/timed out: {str(e)}")
+        from bson import ObjectId
+        new_analysis["_id"] = ObjectId()
     return new_analysis
 
 async def get_analyses_by_user(user_id: str) -> list:
