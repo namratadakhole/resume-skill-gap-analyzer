@@ -15,6 +15,7 @@ import ForgotPassword from '../pages/ForgotPassword';
 import ResumeStudio from '../pages/ResumeStudio';
 import InterviewPrep from '../pages/InterviewPrep';
 import ProjectRecommendations from '../pages/ProjectRecommendations';
+import Landing from '../pages/Landing';
 
 // Lucide icon
 import { Loader } from 'lucide-react';
@@ -31,13 +32,13 @@ export default function MainLayout() {
   // Route protection redirect checks
   useEffect(() => {
     if (!user) {
-      // If logged out, default non-auth pages back to login screen
-      if (activePage !== 'Login' && activePage !== 'Register' && activePage !== 'ForgotPassword') {
-        setActivePage('Login');
+      // If logged out, allowed pages are Landing, Login, Register, ForgotPassword
+      if (activePage !== 'Landing' && activePage !== 'Login' && activePage !== 'Register' && activePage !== 'ForgotPassword') {
+        setActivePage('Landing');
       }
     } else {
-      // If logged in, default auth pages back to Dashboard workspace
-      if (activePage === 'Login' || activePage === 'Register' || activePage === 'ForgotPassword') {
+      // If logged in, default auth/landing pages back to Dashboard workspace
+      if (activePage === 'Landing' || activePage === 'Login' || activePage === 'Register' || activePage === 'ForgotPassword') {
         setActivePage('Dashboard');
       }
       // Redirect previous resume sub-pages into Resume Studio
@@ -61,6 +62,9 @@ export default function MainLayout() {
 
   // Logged-out layout container (Stripe / ChatGPT minimal style)
   if (!user) {
+    if (activePage === 'Landing') {
+      return <Landing onNavigate={setActivePage} />;
+    }
     return (
       <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 transition-colors duration-200">
         <main className="flex-grow flex items-center justify-center p-6 max-w-7xl mx-auto w-full">
